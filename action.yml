@@ -1,0 +1,36 @@
+name: 'Deploy to Rezoleo via SFTP'
+description: 'Prépare un dossier et déploie son contenu sur Hippolyte via SFTP avec lftp + clé SSH'
+inputs:
+  sftp-key:
+    description: 'Clé privée SSH pour le serveur SFTP'
+    required: true
+  sftp-user:
+    description: 'Nom d’utilisateur pour le serveur SFTP'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Préparer le dossier clean
+      run: |
+        mkdir upload_clean
+        shopt -s dotglob
+        find . -mindepth 1 -maxdepth 1 ! -name upload_clean -exec cp -r {} upload_clean/ \;
+        rm -rf upload_clean/.git
+      shell: bash
+
+    - name: Installer lftp
+      run: sudo apt-get update && sudo apt-get install -y lftp
+      shell: bash
+
+    - name: Écrire la clé privée
+      run: |
+        echo "${{ inputs.sftp-key }}" > id_rsa
+        chmod 600 id_rsa
+      shell: bash
+
+    - name: Déployer via lftp
+      run: |
+        cd upload_clean
+        lftp -u "${{ inputs.sftp-user }}","" -e "set sftp:connect-program 'ssh -i ../id_rsa -o StrictHostKeyChecking=no -p 8888'; set ssl:verify-certificate no; mirror -R --delete --exclude-glob .git/ ./ /writable/; bye" sftp://sftp.rezoleo.fr
+      shell: bash
