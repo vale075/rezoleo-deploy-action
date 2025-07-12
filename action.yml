@@ -1,8 +1,8 @@
 name: 'Deploy to Rezoleo via SFTP'
-description: 'Prépare un dossier et déploie son contenu sur Hippolyte via SFTP avec lftp + clé SSH'
+description: 'Déploie le contenu du repo sur Hippolyte via SFTP avec lftp + user/password, en ignorant .git/ et en respectant partiellement le .gitignore'
 inputs:
-  sftp-key:
-    description: 'Clé privée SSH pour le serveur SFTP'
+  sftp-password:
+    description: 'Mot de passe pour le serveur SFTP'
     required: true
   sftp-user:
     description: 'Nom d’utilisateur pour le serveur SFTP'
@@ -11,26 +11,16 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Préparer le dossier clean
-      run: |
-        mkdir upload_clean
-        shopt -s dotglob
-        find . -mindepth 1 -maxdepth 1 ! -name upload_clean -exec cp -r {} upload_clean/ \;
-        rm -rf upload_clean/.git
-      shell: bash
-
     - name: Installer lftp
-      run: sudo apt-get update && sudo apt-get install -y lftp
-      shell: bash
-
-    - name: Écrire la clé privée
-      run: |
-        echo "${{ inputs.sftp-key }}" > id_rsa
-        chmod 600 id_rsa
-      shell: bash
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: lftp
+        version: 1.0
 
     - name: Déployer via lftp
+      env:
+        SFTP_USER: ${{ inputs.sftp-user }}
+        SFTP_PASSWORD: ${{ inputs.sftp-password }}
       run: |
-        cd upload_clean
-        lftp -u "${{ inputs.sftp-user }}","" -e "set sftp:connect-program 'ssh -i ../id_rsa -o StrictHostKeyChecking=no -p 8888'; set ssl:verify-certificate no; mirror -R --delete --exclude-glob .git/ ./ /writable/; bye" sftp://sftp.rezoleo.fr
+        lftp -p 8888 "sftp://$SFTP_USER:$SFTP_PASSWORD@sftp.rezoleo.fr" -e "set sftp:auto-confirm yes; mirror -e -R -x .git --exclude-glob-from=.gitignore ./ ./writable ; quit"
       shell: bash
