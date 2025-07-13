@@ -1,25 +1,33 @@
 # Deploy to Rezoleo via SFTP
 
-This GitHub Action allows you to deploy content to Rezoleo's Hippolyte server via SFTP using `lftp` and an SSH private key. It automates the preparation of a clean folder and the deployment process. It deploys the content to the `writable` folder on the server.
+This GitHub Action allows you to deploy content to Rezoleo's Hippolyte server via SFTP using `lftp` and an SSH private key or a password. It automates the deployment process while removing the `.git` folder as well as the `.gitignore`. It deploys the content to the `writable` folder on the server.
 
 ## Features
-- Prepares a clean folder for deployment.
+- Checks if the inputs are correct (either a key or a password must be provided).
 - Installs `lftp` for SFTP operations.
-- Deploys content securely using an SSH private key.
+- Deploys content securely using an SSH private key or a password.
 
 ## Inputs
-
-### `sftp-key`
-**Required**
-
-The SSH private key for the SFTP server. This key is used to authenticate the deployment process.
-
-You must ask a Rezoleo administrator to add your dedicated public key to your user on the server.
 
 ### `sftp-user`
 **Required**
 
 The username for the SFTP server.
+
+### `sftp-password`
+**Partially optionnal**
+
+The password for the SFTP server. This password is used to authenticate the deployment process.
+
+### `sftp-key`
+**Partially optionnal**
+
+The SSH private key for the SFTP server. This key is used to authenticate the deployment process.
+
+You must ask a Rezoleo administrator to add your dedicated public key to your user on the server.
+
+> [!IMPORTANT] 
+> You must either provide a key, or a password, not both!
 
 ## Usage
 
@@ -44,25 +52,24 @@ jobs:
       - name: Deploy to Rezoleo
         uses: rezoleo/rezoleo-deploy-action@v1
         with:
-          sftp-key: ${{ secrets.SFTP_KEY }}
           sftp-user: ${{ secrets.SFTP_USER }}
+          # Use only one of the following lines :
+          #sftp-password: ${{ secrets.SFTP_PASSWORD }}
+          sftp-key: ${{ secrets.SFTP_KEY }}
 ```
 
 ## Secrets
 
 You need to define the following secrets in your repository:
 
-- `SFTP_KEY`: The SSH private key for the SFTP server.
 - `SFTP_USER`: The username for the SFTP server.
-
-## Scripts
-
-This action uses the following scripts:
-- `scripts/prepare-upload.sh`
-- `scripts/deploy.sh`
+- `SFTP_PASSWORD`: The password for the SFTP server.
+- `SFTP_KEY`: The SSH private key for the SFTP server.
 
 ## Notes
 
-- A new folder named `clean_upload` is created during the deployment process.
 - The SSH private key is written to a file named `id_rsa` during the deployment process.
-- Caution : the upload process will overwrite completely the content in the `writable` folder on the server.
+- Caution : The upload process will completely overwrite the content in the `writable` folder on the server, except the `.git` folder and what is included in the `.gitignore` file.
+
+> [!WARNING] 
+> Include directives present in the `.gitignore` files (lines starting with `!`) are not respected!
