@@ -1,5 +1,5 @@
 name: 'Deploy to Rezoleo via SFTP'
-description: 'Deploys the repo's content to Hippolyte via SFTP with lftp, ignoring the .git/ folder and respecting the .gitignore. A password XOR an SSH key needs to be provided.'
+description: "Deploys the repo's content to Hippolyte via SFTP with lftp, ignoring the .git/ folder and respecting the .gitignore. A password XOR an SSH key needs to be provided."
 inputs:
   sftp-user:
     description: 'Username for the SFTP server'
