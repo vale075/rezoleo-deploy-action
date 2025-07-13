@@ -1,26 +1,56 @@
 name: 'Deploy to Rezoleo via SFTP'
-description: 'Déploie le contenu du repo sur Hippolyte via SFTP avec lftp + user/password, en ignorant .git/ et en respectant partiellement le .gitignore'
+description: 'Déploie le contenu du repo sur Hippolyte via SFTP avec lftp, en ignorant .git/ et en respectant partiellement le .gitignore. Un mot de passe ou (exclusif) une clé doivent être fournis.'
 inputs:
-  sftp-password:
-    description: 'Mot de passe pour le serveur SFTP'
-    required: true
   sftp-user:
     description: 'Nom d’utilisateur pour le serveur SFTP'
     required: true
+  sftp-password:
+    description: 'Mot de passe pour le serveur SFTP'
+    required: false
+  sftp-key:
+    description: 'Clé privée SSH pour le serveur SFTP'
+    required: false
 
 runs:
   using: "composite"
   steps:
+    - name: Vérifier les entrées
+      run: |
+        A="${{ inputs.sftp-password }}"
+        B="${{ inputs.sftp-key }}"
+
+        if { [[ -n "$A" && -z "$B" ]] || [[ -z "$A" && -n "$B" ]]; }; then
+          echo "Validé : Une seule entrée pour l'authentification a bien été fournie."
+        else
+          echo "Erreur : Une et une seule des entrées d'authentification (Mot de passe/Clé privé SSH) doit être fournie."
+          exit 1
+        fi
+      shell: bash
+
     - name: Installer lftp
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
         packages: lftp
         version: 1.0
 
-    - name: Déployer via lftp
+    - name: Déployer via lftp avec un mot de passe
+      if: ${{ inputs.sftp-password != '' }}
       env:
         SFTP_USER: ${{ inputs.sftp-user }}
         SFTP_PASSWORD: ${{ inputs.sftp-password }}
       run: |
-        lftp -p 8888 "sftp://$SFTP_USER:$SFTP_PASSWORD@sftp.rezoleo.fr" -e "set sftp:auto-confirm yes; mirror -e -R -x .git --exclude-glob-from=.gitignore ./ ./writable ; quit"
+        lftp -p 8888 "sftp://$SFTP_USER:$SFTP_PASSWORD@sftp.rezoleo.fr" -e "set cmd:trace true; set sftp:auto-confirm yes; mirror -e -R -x .git --exclude-glob-from=.gitignore ./ ./writable ; quit" -d
+      shell: bash
+
+    - name: Écrire la clé privée
+      if: ${{ inputs.sftp-key != '' }}
+      run: |
+        echo "${{ inputs.sftp-key }}" > id_rsa
+        chmod 600 id_rsa
+      shell: bash
+
+    - name: Déployer via lftp
+      if: ${{ inputs.sftp-key != '' }}
+      run: |
+        lftp -u "${{ inputs.sftp-user }}","" -e "set cmd:trace true; set sftp:connect-program 'ssh -i ./id_rsa -o StrictHostKeyChecking=no -p 8888'; set ssl:verify-certificate no; mirror -e -R -x .git/ --exclude-glob-from=.gitignore ./ /writable/; quit" -d sftp://sftp.rezoleo.fr
       shell: bash
