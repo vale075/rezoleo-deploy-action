@@ -28,7 +28,7 @@ runs:
       shell: bash
 
     - name: Installer lftp
-      uses: awalsh128/cache-apt-pkgs-action@latest
+      uses: awalsh128/cache-apt-pkgs-action@1.5
       with:
         packages: lftp
         version: 1.0
