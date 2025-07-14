@@ -15,12 +15,12 @@ This GitHub Action allows you to deploy content to Rezoleo's Hippolyte server vi
 The username for the SFTP server.
 
 ### `sftp-password`
-**Partially optionnal**
+**Partially optional**
 
 The password for the SFTP server. This password is used to authenticate the deployment process.
 
 ### `sftp-key`
-**Partially optionnal**
+**Partially optional**
 
 The SSH private key for the SFTP server. This key is used to authenticate the deployment process.
 
