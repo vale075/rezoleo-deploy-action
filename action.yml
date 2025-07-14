@@ -27,6 +27,16 @@ runs:
         fi
       shell: bash
 
+    - name: temp
+      run: |
+        ls
+        echo "ls .."
+        ls ..
+        echo "pwd"
+        pwd
+        exit 1
+      shell: bash
+
     - name: Install lftp package
       uses: awalsh128/cache-apt-pkgs-action@v1.5.1
       with:
