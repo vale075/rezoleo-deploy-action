@@ -39,7 +39,7 @@ runs:
         SFTP_USER: ${{ inputs.sftp-user }}
         SFTP_PASSWORD: ${{ inputs.sftp-password }}
       run: |
-        lftp -p 8888 "sftp://$SFTP_USER:$SFTP_PASSWORD@sftp.rezoleo.fr" -e "set cmd:trace true; set sftp:auto-confirm yes; mirror -e -R -x .git --exclude-glob-from=.gitignore ./ ./writable ; quit"
+        lftp -p 8888 "sftp://$SFTP_USER:$SFTP_PASSWORD@sftp.rezoleo.fr" -e "set cmd:trace true; set sftp:auto-confirm yes; mirror --delete --reverse --exclude=.git --exclude-glob-from=.gitignore ./ ./writable ; quit"
       shell: bash
 
     - name: Write the private key
@@ -52,5 +52,5 @@ runs:
     - name: Deploy via lftp with key
       if: ${{ inputs.sftp-key != '' }}
       run: |
-        lftp -u "${{ inputs.sftp-user }}","" -e "set cmd:trace true; set sftp:connect-program 'ssh -i ./id_rsa -o StrictHostKeyChecking=no -p 8888'; set ssl:verify-certificate no; mirror -e -R -x .git/ --exclude-glob-from=.gitignore ./ /writable/; quit" sftp://sftp.rezoleo.fr
+        lftp -u "${{ inputs.sftp-user }}","" -e "set cmd:trace true; set sftp:connect-program 'ssh -i ./id_rsa -o StrictHostKeyChecking=no -p 8888'; set ssl:verify-certificate no; mirror --delete --reverse --exclude=.git/ --exclude-glob-from=.gitignore ./ /writable/; quit" sftp://sftp.rezoleo.fr
       shell: bash
